@@ -100,11 +100,13 @@ if st.button("🔮 Run AI Return Prediction", type="primary", use_container_widt
     # This aligns our 1 row of input with the 120 columns the model expects. Missing columns get filled with 0.
     df_final = df_encoded.reindex(columns=model_columns, fill_value=0)
     
-    # 5. Make Prediction
+   # 5. Make Prediction
     prediction = xgb_model.predict(df_final)[0]
     probabilities = xgb_model.predict_proba(df_final)[0]
-    return_prob = probabilities[1] * 100
-    keep_prob = probabilities[0] * 100
+    
+    # SAFETY CLAMP: Force values to be strictly between 0.0 and 1.0 
+    prob_return = float(max(0.0, min(1.0, probabilities[1])))
+    prob_keep = float(max(0.0, min(1.0, probabilities[0])))
     
     # 6. Display Results
     st.markdown("### AI Assessment Results")
@@ -121,7 +123,8 @@ if st.button("🔮 Run AI Return Prediction", type="primary", use_container_widt
             
     with res_col2:
         st.write("**Probability Breakdown:**")
-        st.progress(return_prob / 100, text=f"Probability of Return: {return_prob:.1f}%")
-        st.progress(keep_prob / 100, text=f"Probability of Keeping: {keep_prob:.1f}%")
+        # Use the clamped floats directly
+        st.progress(prob_return, text=f"Probability of Return: {prob_return * 100:.1f}%")
+        st.progress(prob_keep, text=f"Probability of Keeping: {prob_keep * 100:.1f}%")
         
     st.info("💡 **Business Recommendation:** If the return probability exceeds 60% on high-value COD orders, consider enforcing prepaid shipping or routing the order to manual customer verification.")
